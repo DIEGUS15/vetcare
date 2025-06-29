@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  api-gateway:
+    build: ./services/api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - FRONTEND_URL=${FRONTEND_URL}
+      - TOKEN_SECRET=${TOKEN_SECRET}
+    depends_on:
+      - auth-service
+      - patients-service
+
+  auth-service:
+    build: ./services/auth-service
+    ports:
+      - "3001:3001"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/VETCARE_AUTH
+      - TOKEN_SECRET=${TOKEN_SECRET}
+    depends_on:
+      - mongodb
+
+  patients-service:
+    build: ./services/patients-service
+    ports:
+      - "3002:3002"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/VETCARE_PATIENTS
+      - TOKEN_SECRET=${TOKEN_SECRET}
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:
