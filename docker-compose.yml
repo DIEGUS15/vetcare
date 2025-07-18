@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   api-gateway:
     build: ./services/api-gateway
@@ -8,6 +6,10 @@ services:
     environment:
       - FRONTEND_URL=${FRONTEND_URL}
       - TOKEN_SECRET=${TOKEN_SECRET}
+      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
+    volumes:
+      - ./services/api-gateway:/usr/src/app
+      - api_gateway_node_modules:/usr/src/app/node_modules
     depends_on:
       - auth-service
       - patients-service
@@ -19,6 +21,10 @@ services:
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/VETCARE_AUTH
       - TOKEN_SECRET=${TOKEN_SECRET}
+      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
+    volumes:
+      - ./services/auth-service:/usr/src/app
+      - auth_service_node_modules:/usr/src/app/node_modules
     depends_on:
       - mongodb
 
@@ -29,6 +35,9 @@ services:
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/VETCARE_PATIENTS
       - TOKEN_SECRET=${TOKEN_SECRET}
+    volumes:
+      - ./services/patients-service:/usr/src/app
+      - patients_service_node_modules:/usr/src/app/node_modules
     depends_on:
       - mongodb
 
@@ -41,3 +50,6 @@ services:
 
 volumes:
   mongodb_data:
+  api_gateway_node_modules:
+  auth_service_node_modules:
+  patients_service_node_modules:

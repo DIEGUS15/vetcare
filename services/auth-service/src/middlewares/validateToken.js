@@ -3,7 +3,8 @@ import { TOKEN_SECRET } from "../config.js";
 
 export const authRequired = (req, res, next) => {
   // Priorizar cookie, luego header Authorization
-  const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
+  const token =
+    req.cookies.accessToken || req.headers.authorization?.split(" ")[1];
 
   if (!token) {
     return res.status(401).json({ message: "No token, authorization denied" });

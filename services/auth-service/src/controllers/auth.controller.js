@@ -1,50 +1,8 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
-import { createAccessToken } from "../libs/jwt.js";
+import { createAccessToken, createRefreshToken } from "../libs/jwt.js";
 import jwt from "jsonwebtoken";
-import { TOKEN_SECRET } from "../config.js";
-
-export const register = async (req, res) => {
-  const { fullname, cedula, telephone, address, role, email, password } =
-    req.body;
-
-  try {
-    const userFound = await User.findOne({ email });
-    if (userFound) return res.status(400).json(["The email is already in use"]);
-
-    //Entra un hash y se encripta
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    //Se crea un nuevo usuario
-    const newUser = new User({
-      fullname,
-      cedula,
-      telephone,
-      address,
-      role,
-      state: "active",
-      email,
-      password: passwordHash,
-    });
-
-    //Se guarda el usuario
-    const userSaved = await newUser.save();
-
-    //Devuelve el usuario registrado
-    res.json({
-      id: userSaved.id,
-      fullname: userSaved.fullname,
-      cedula: userSaved.cedula,
-      telephone: userSaved.telephone,
-      address: userSaved.address,
-      role: userSaved.role,
-      state: userSaved.state,
-      email: userSaved.email,
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+import { TOKEN_SECRET, REFRESH_TOKEN_SECRET } from "../config.js";
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
@@ -57,34 +15,52 @@ export const login = async (req, res) => {
     if (!isMatch)
       return res.status(400).json({ message: "Incorrect password" });
 
-    const token = await createAccessToken({
+    const accessToken = await createAccessToken({
       id: userFound._id,
       role: userFound.role,
     });
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Solo HTTPS en producción
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // Más estricto en producción
-      maxAge: 24 * 60 * 60 * 1000, // 24 horas en milisegundos
-      path: "/",
-      // httpOnly: true,
-      // // secure: process.env.NODE_ENV === "production",
-      // // sameSite: "lax",
-      // secure: false, // Desactivado para desarrollo con HTTP
-      // sameSite: "none", // Permite cookies en Postman
-      // maxAge: 86400000,
-      // path: "/", // Accesible en todas las rutas
-      // domain: "localhost", // Especifica el dominio explícitamente
+    const refreshToken = await createRefreshToken({
+      id: userFound._id,
     });
 
-    //Devuelve el usuario registrado
     res.json({
-      id: userFound.id,
-      fullname: userFound.fullname,
-      email: userFound.email,
-      role: userFound.role,
+      user: {
+        id: userFound.id,
+        fullname: userFound.fullname,
+        email: userFound.email,
+        role: userFound.role,
+      },
+      tokens: {
+        accessToken,
+        refreshToken,
+        expiresIn: "24h",
+      },
     });
+
+    // res.cookie("token", token, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "production", // Solo HTTPS en producción
+    //   sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // Más estricto en producción
+    //   maxAge: 24 * 60 * 60 * 1000, // 24 horas en milisegundos
+    //   path: "/",
+    //   // httpOnly: true,
+    //   // // secure: process.env.NODE_ENV === "production",
+    //   // // sameSite: "lax",
+    //   // secure: false, // Desactivado para desarrollo con HTTP
+    //   // sameSite: "none", // Permite cookies en Postman
+    //   // maxAge: 86400000,
+    //   // path: "/", // Accesible en todas las rutas
+    //   // domain: "localhost", // Especifica el dominio explícitamente
+    // });
+
+    // //Devuelve el usuario registrado
+    // res.json({
+    //   id: userFound.id,
+    //   fullname: userFound.fullname,
+    //   email: userFound.email,
+    //   role: userFound.role,
+    // });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -95,6 +71,35 @@ export const logout = (req, res) => {
     expires: new Date(0),
   });
   return res.sendStatus(200);
+};
+
+export const refreshToken = async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: "Refresh token required" });
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const newAccessToken = await createAccessToken({
+      id: user._id,
+      role: user.role,
+    });
+
+    res.json({
+      accessToken: newAccessToken,
+      expiresIn: "24h",
+    });
+  } catch (error) {
+    res.status(403).json({ message: "Invalid refresh token" });
+  }
 };
 
 //Ruta para verificar que el usuario siga autenticado en la página
@@ -135,67 +140,21 @@ export const profile = async (req, res) => {
   });
 };
 
-export const getUsers = async (req, res) => {
+export const updateProfile = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 5;
+    const { fullname, cedula, telephone, address, email } = req.body;
 
-    //Validar parametros
-    if (page < 1 || limit < 1) {
-      return res.status(400).json({
-        success: false,
-        message: "Los parámetros de paginación deben ser números positivos",
-      });
-    }
-
-    const skip = (page - 1) * limit;
-
-    const totalUsers = await User.countDocuments();
-    const totalPages = Math.ceil(totalUsers / limit);
-
-    //Obtener los usuarios con paginacion
-    const users = await User.find()
-      .skip(skip)
-      .limit(limit)
-      .select("-password")
-      .lean();
-
-    //Respuesta con información de paginacion
-    res.status(200).json({
-      success: true,
-      data: users,
-      pagination: {
-        totalItems: totalUsers,
-        totalPages,
-        currentPage: page,
-        itemsPerPage: limit,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1,
-      },
-    });
-  } catch (error) {
-    console.error("Error al obtener usuarios:", Error);
-    res.status(500).json({
-      success: false,
-      message: "Error interno del servidor al obtener usuarios",
-    });
-  }
-};
-
-export const updateUser = async (req, res) => {
-  try {
     const user = await User.findByIdAndUpdate(
-      req.params.id,
+      req.user.id,
       {
         fullname,
-        cedula,
         telephone,
         address,
-        role,
-        state,
         email,
       },
-      { new: true }
+      {
+        new: true,
+      }
     );
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json(user);
