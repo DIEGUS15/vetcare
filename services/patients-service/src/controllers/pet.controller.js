@@ -93,7 +93,7 @@ export const createPet = async (req, res) => {
       gender,
       state,
       owner,
-      createdBy: req.user.id,
+      // createdBy: req.user.id,
     });
 
     await newPet.save();
@@ -105,5 +105,21 @@ export const createPet = async (req, res) => {
       details:
         process.env.NODE_ENV === "development" ? error.message : undefined,
     });
+  }
+};
+
+export const updatePet = async (req, res) => {
+  try {
+    const { photo, name, species, breed, age, weight, gender, state, owner } =
+      req.body;
+    const pet = await Pet.findByIdAndUpdate(
+      req.params.id,
+      { photo, name, species, breed, age, weight, gender, state, owner },
+      { new: true }
+    );
+    if (!pet) return res.status(404).json({ message: "Pet not found" });
+    res.json(pet);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };

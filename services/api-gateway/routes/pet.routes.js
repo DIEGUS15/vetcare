@@ -3,6 +3,7 @@ import {
   getPetsController,
   createPetController,
   getPetsByUserController,
+  updatePet,
 } from "../controllers/pet.controller.js";
 import { authenticate, authorize } from "../middlewares/auth.middleware.js";
 
@@ -15,6 +16,8 @@ router.get(
   getPetsController
 );
 
+router.get("/pets/user/:userId", authenticate, getPetsByUserController);
+
 router.post(
   "/pet",
   authenticate,
@@ -22,6 +25,6 @@ router.post(
   createPetController
 );
 
-router.get("/pets/user/:userId", authenticate, getPetsByUserController);
+router.put("/pet/:id", authenticate, authorize(["admin"]), updatePet);
 
 export default router;

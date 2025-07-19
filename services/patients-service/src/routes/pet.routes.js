@@ -1,14 +1,16 @@
 import { Router } from "express";
 import {
-  createPet,
   getPets,
   getPetsByUser,
+  createPet,
+  updatePet,
 } from "../controllers/pet.controller.js";
 import { authRequired } from "../middlewares/validateToken.js";
 import { checkRole } from "../middlewares/checkRole.js";
 
 const router = Router();
 
+//Obtener todas las mascotas
 router.get(
   "/pets",
   authRequired,
@@ -16,6 +18,15 @@ router.get(
   getPets
 );
 
+//Obtener las mascotas que pertenecen a un usuario específico
+router.get(
+  "/pets/user/:userId",
+  authRequired,
+  checkRole(["veterinarian", "recepcionista", "admin"]),
+  getPetsByUser
+);
+
+//Crear mascotas
 router.post(
   "/pet",
   authRequired,
@@ -23,11 +34,7 @@ router.post(
   createPet
 );
 
-router.get(
-  "/pets/user/:userId",
-  authRequired,
-  checkRole(["veterinarian", "recepcionista", "admin"]),
-  getPetsByUser
-);
+//Editar mascotas
+router.put("/pet/:id", authRequired, checkRole(["admin"]), updatePet);
 
 export default router;
