@@ -1,14 +1,13 @@
 import express from "express";
 import morgan from "morgan";
-// import cors from "cors";
 
-import petRoutes from "./routes/pet.routes.js";
+import appointmentRoutes from "./routes/appointment.routes.js";
 
 const app = express();
 
 app.use(morgan("dev"));
 app.use(express.json());
 
-app.use("/api", petRoutes);
+app.use("/api", appointmentRoutes);
 
 export default app;

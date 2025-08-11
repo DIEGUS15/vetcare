@@ -30,7 +30,23 @@ export const setCookies = (res, tokens) => {
   });
 };
 
+// export const clearCookies = (res) => {
+//   res.clearCookie("accessToken");
+//   res.clearCookie("refreshToken");
+// };
+
 export const clearCookies = (res) => {
-  res.clearCookie("accessToken");
-  res.clearCookie("refreshToken");
+  res.clearCookie("accessToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    path: "/",
+  });
+
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    path: "/",
+  });
 };

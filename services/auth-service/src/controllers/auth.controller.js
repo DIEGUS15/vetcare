@@ -67,10 +67,7 @@ export const login = async (req, res) => {
 };
 
 export const logout = (req, res) => {
-  res.cookie("token", "", {
-    expires: new Date(0),
-  });
-  return res.sendStatus(200);
+  return res.status(200).json({ message: "Logged out successfully" });
 };
 
 export const refreshToken = async (req, res) => {
@@ -86,6 +83,10 @@ export const refreshToken = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.state !== "active") {
+      return res.status(403).json({ message: "User account is inactive" });
     }
 
     const newAccessToken = await createAccessToken({
@@ -104,15 +105,23 @@ export const refreshToken = async (req, res) => {
 
 //Ruta para verificar que el usuario siga autenticado en la página
 export const verifyToken = async (req, res) => {
-  const { token } = req.cookies;
+  // Usar la misma lógica que tu middleware
+  const token =
+    req.cookies.accessToken || req.headers.authorization?.split(" ")[1];
 
   if (!token) return res.status(401).json({ message: "Unauthorized" });
 
-  jwt.verify(token, TOKEN_SECRET, async (err, user) => {
-    if (err) return res.status(401).json({ message: "Unauthorized" });
+  try {
+    const decoded = jwt.verify(token, TOKEN_SECRET);
+    const userFound = await User.findById(decoded.id);
 
-    const userFound = await User.findById(user.id);
-    if (!userFound) return res.status(401).json({ message: "Unauthorized" });
+    if (!userFound) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    if (userFound.state !== "active") {
+      return res.status(401).json({ message: "User account is inactive" });
+    }
 
     return res.json({
       id: userFound.id,
@@ -120,7 +129,9 @@ export const verifyToken = async (req, res) => {
       email: userFound.email,
       role: userFound.role,
     });
-  });
+  } catch (error) {
+    return res.status(401).json({ message: "Invalid token" });
+  }
 };
 
 export const profile = async (req, res) => {

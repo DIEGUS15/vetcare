@@ -13,6 +13,7 @@ services:
     depends_on:
       - auth-service
       - patients-service
+      - appointment-service
 
   auth-service:
     build: ./services/auth-service
@@ -41,6 +42,19 @@ services:
     depends_on:
       - mongodb
 
+  appointment-service:
+    build: ./services/appointment-service
+    ports:
+      - "3003:3003"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/VETCARE_PATIENTS
+      - TOKEN_SECRET=${TOKEN_SECRET}
+    volumes:
+      - ./services/appointment-service:/usr/src/app
+      - appointment_service_node_modules:/usr/src/app/node_modules
+    depends_on:
+      - mongodb
+
   mongodb:
     image: mongo:6
     ports:
@@ -53,3 +67,4 @@ volumes:
   api_gateway_node_modules:
   auth_service_node_modules:
   patients_service_node_modules:
+  appointment_service_node_modules:

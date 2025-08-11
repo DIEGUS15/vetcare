@@ -9,6 +9,7 @@ import { errorHandler } from "./middlewares/errorHandler.js";
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import petRoutes from "./routes/pet.routes.js";
+import appointmentRoutes from "./routes/appointment.routes.js";
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use(cookieParser());
 app.use("/api", authRoutes);
 app.use("/api", userRoutes);
 app.use("/api", petRoutes);
+app.use("/api", appointmentRoutes);
 
 // Manejo de errores global
 app.use(errorHandler);

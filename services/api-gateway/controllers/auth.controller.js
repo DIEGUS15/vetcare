@@ -5,6 +5,8 @@ import {
   refreshAccessToken,
 } from "../libs/tokenService.js";
 
+import { SERVICES } from "../config/services.config.js";
+
 const getToken = (req) =>
   req.cookies.accessToken || req.headers.authorization?.split(" ")[1];
 
@@ -12,7 +14,7 @@ export const loginController = async (req, res) => {
   try {
     const response = await makeRequest(
       "POST",
-      "http://auth-service:3001/api/login",
+      `${SERVICES.AUTH}/api/login`,
       req.body
     );
 
@@ -56,7 +58,7 @@ export const refreshTokenController = async (req, res) => {
   try {
     const response = await makeRequest(
       "POST",
-      "http://auth-service:3001/api/refresh-token",
+      `${SERVICES.AUTH}/api/refresh-token`,
       { refreshToken }
     );
 
