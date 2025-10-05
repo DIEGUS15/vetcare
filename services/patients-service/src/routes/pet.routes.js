@@ -1,6 +1,8 @@
 import { Router } from "express";
 import {
   getPets,
+  getPet,
+  getMyPets,
   getPetsByUser,
   createPet,
   updatePet,
@@ -16,6 +18,22 @@ router.get(
   authRequired,
   checkRole(["veterinarian", "recepcionista", "admin"]),
   getPets
+);
+
+//Obtener una mascota específica por ID
+router.get(
+  "/pets/:id",
+  authRequired,
+  checkRole(["veterinarian", "rescepcionista", "admin", "client"]),
+  getPet
+);
+
+//Obtener las mascotas del usuario logueado
+router.get(
+  "/my-pets/",
+  authRequired,
+  checkRole(["client", "veterinarian", "recepcionista", "admin"]),
+  getMyPets
 );
 
 //Obtener las mascotas que pertenecen a un usuario específico

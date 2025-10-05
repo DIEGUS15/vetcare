@@ -57,14 +57,23 @@ export const getPet = async (req, res) => {
 //Obtener las mascotas del usuario logueado actual
 export const getMyPets = async (req, res) => {
   try {
-    const { ownerId } = req.params;
-
+    const ownerId = req.user.id; // Del token decodificado
     const pets = await Pet.find({ owner: ownerId });
     res.json(pets);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+// export const getMyPets = async (req, res) => {
+//   try {
+//     const { ownerId } = req.params;
+
+//     const pets = await Pet.find({ owner: ownerId });
+//     res.json(pets);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
 
 //Obtener mascotas de un propietario
 export const getPetsByUser = async (req, res) => {
